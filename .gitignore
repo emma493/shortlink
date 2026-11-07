@@ -1,3 +1,12 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+.wrangler/
+
 # OS
 .DS_Store
 Thumbs.db
@@ -13,6 +22,10 @@ npm-debug.log*
 
 # Misc
 *.zip
+
+# Wrangler / wrangler.toml secrets (never commit KV IDs with real values if sensitive)
+.dev.vars
+.wrangler/
 
 # Unrelated browser cache (not part of project)
 deedwaifpleas.org/

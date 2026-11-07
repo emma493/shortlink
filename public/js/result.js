@@ -1,12 +1,13 @@
 /* ==========================================
-   Shortlink — Result page logic (static)
-   Shows the shortened link with copy button.
+   Shortlink — Result page logic (Worker API)
+   GET /api/link/:code → fetch stats
    ========================================== */
 
 (function () {
   const linkInput = document.getElementById("short-link");
   const copyBtn = document.getElementById("copy-btn");
   const newBtn = document.getElementById("new-shorten-btn");
+  const clicksEl = document.getElementById("stat-clicks");
 
   if (!linkInput) return;
 
@@ -28,7 +29,21 @@
   const code = params.get("code");
   const shortUrl = params.get("url");
 
-  linkInput.value = shortUrl || window.location.origin + "/go.html?code=" + code;
+  linkInput.value = shortUrl || window.location.origin + "/r/" + code;
+
+  // Fetch real stats from the Worker API
+  if (code) {
+    fetch("/api/link/" + encodeURIComponent(code))
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.clicks !== undefined && clicksEl) {
+          clicksEl.textContent = data.clicks;
+        }
+      })
+      .catch(() => {
+        // Silently fail — stats are optional
+      });
+  }
 
   copyBtn.addEventListener("click", function () {
     const text = linkInput.value;

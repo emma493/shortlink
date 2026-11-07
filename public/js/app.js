@@ -1,7 +1,6 @@
 /* ==========================================
-   Shortlink — Home page logic (static)
-   Generates a short code, stores it in localStorage,
-   then navigates to the result page.
+   Shortlink — Home page logic (Worker API)
+   POST /api/shorten → navigate to result.html
    ========================================== */
 
 (function () {
@@ -36,18 +35,7 @@
     }
   }
 
-  // Generate a 6-char short code
-  function generateCode() {
-    const chars =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    let code = "";
-    for (let i = 0; i < 6; i++) {
-      code += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return code;
-  }
-
-  form.addEventListener("submit", function (e) {
+  form.addEventListener("submit", async function (e) {
     e.preventDefault();
 
     const raw = input.value.trim();
@@ -63,41 +51,39 @@
       return;
     }
 
-    // Normalize URL
-    let longUrl = raw;
-    if (!/^https?:\/\//i.test(longUrl)) {
-      longUrl = "https://" + longUrl;
-    }
+    // Loading state
+    const originalText = btn.textContent;
+    btn.textContent = "Shortening…";
+    btn.disabled = true;
 
-    // Generate a unique code
-    let code;
-    do {
-      code = generateCode();
-    } while (localStorage.getItem("sl:" + code));
-
-    // Save the mapping in localStorage
     try {
-      localStorage.setItem("sl:" + code, longUrl);
+      const response = await fetch("/api/shorten", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: raw }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        showToast(data.error || "Failed to shorten link", "error");
+        btn.textContent = originalText;
+        btn.disabled = false;
+        return;
+      }
+
+      // Navigate to result page with the real short link from the Worker
+      const resultUrl =
+        "result.html?code=" +
+        encodeURIComponent(data.code) +
+        "&url=" +
+        encodeURIComponent(data.shortUrl);
+      window.location.href = resultUrl;
     } catch (err) {
-      showToast("Storage unavailable — try clearing site data.", "error");
-      btn.textContent = "Shorten";
+      showToast("Could not reach the server. Is the Worker deployed?", "error");
+      btn.textContent = originalText;
       btn.disabled = false;
-      return;
     }
-
-    // Build the short link (static: go.html?code=ABC)
-    const shortUrl = window.location.origin + window.location.pathname.replace(
-      /[^\/]*$/,
-      ""
-    ) + "go.html?code=" + code;
-
-    // Navigate to result page with code + short link
-    const resultUrl =
-      "result.html?code=" +
-      encodeURIComponent(code) +
-      "&url=" +
-      encodeURIComponent(shortUrl);
-    window.location.href = resultUrl;
   });
 
   // Auto-prepend https:// if missing on blur

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Shortlink admin dashboard" />
+  <title>Shortlink — Admin</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <div class="logo">Short<span class="accent">link</span></div>
+      <a href="/" class="btn btn-outline btn-sm">Back to shortener</a>
+    </div>
+  </header>
+
+  <main class="page-body">
+    <div class="container">
+      <div class="admin-card">
+        <div class="admin-header">
+          <div>
+            <h2 style="font-size:1.25rem; font-weight:700; color:#0f172a; margin-bottom:0.25rem;">Admin Dashboard</h2>
+            <p style="font-size:0.875rem; color:#64748b;">Manage your short links and view statistics.</p>
+          </div>
+          <button type="button" id="refresh-btn" class="btn btn-outline btn-sm">Refresh</button>
+        </div>
+
+        <div class="admin-stats">
+          <div class="admin-stat">
+            <span class="admin-stat-value" id="stat-total-links">0</span>
+            <span class="admin-stat-label">Total Links</span>
+          </div>
+          <div class="admin-stat">
+            <span class="admin-stat-value" id="stat-total-clicks">0</span>
+            <span class="admin-stat-label">Total Clicks</span>
+          </div>
+          <div class="admin-stat">
+            <span class="admin-stat-value" id="stat-top-link">—</span>
+            <span class="admin-stat-label">Top Link</span>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Short Code</th>
+                <th>Destination</th>
+                <th>Clicks</th>
+                <th>Created</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="links-table-body">
+              <!-- rows injected by JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <div id="admin-empty" class="empty-state" style="display:none;">
+          <p>No short links yet. Create one at the home page.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>&copy; 2026 Shortlink. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="js/admin.js"></script>
+</body>
+</html>

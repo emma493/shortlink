@@ -1,13 +1,14 @@
 /* ==========================================
-   Shortlink — Intermediate (go) page logic (static)
-   Reads destination from localStorage via the code,
-   runs a 5-second countdown, then redirects.
+   Shortlink — Intermediate (go) page logic (Worker API)
+   GET /api/link/:code → destination URL
+   Countdown → redirect to destination
    ========================================== */
 
 (function () {
   const timerEl = document.getElementById("timer");
   const progressEl = document.getElementById("progress-bar");
   const continueBtn = document.getElementById("continue-btn");
+  const destTextEl = document.getElementById("dest-text");
 
   if (!timerEl) return;
 
@@ -15,11 +16,7 @@
   const params = new URLSearchParams(window.location.search);
   const code = params.get("code");
 
-  // Look up destination in localStorage
   let destination = null;
-  if (code) {
-    destination = localStorage.getItem("sl:" + code);
-  }
 
   // Countdown duration in seconds
   const TOTAL = 5;
@@ -47,6 +44,24 @@
   const timer = setInterval(updateTimer, 1000);
   updateTimer(); // immediate first call
 
+  // Fetch destination from Worker API
+  if (code) {
+    fetch("/api/link/" + encodeURIComponent(code))
+      .then((r) => r.json())
+      .then((data) => {
+        destination = data.longUrl;
+        if (destTextEl && data.longUrl) {
+          const display = data.longUrl.length > 60
+            ? data.longUrl.slice(0, 60) + "&hellip;"
+            : data.longUrl;
+          destTextEl.textContent = "Redirecting to " + display + " in a few seconds.";
+        }
+      })
+      .catch(() => {
+        // Silent fail
+      });
+  }
+
   // Continue button -> go to destination
   if (continueBtn && destination) {
     continueBtn.addEventListener("click", function () {
@@ -55,9 +70,8 @@
     });
   }
 
-  // Auto-redirect after countdown (optional — requires click first for UX)
-  // If no code/destination found, send home
-  if (!destination) {
+  // Fallback: if someone arrives directly without a valid code, go home
+  if (!code) {
     setTimeout(() => {
       window.location.href = "index.html";
     }, 3000);

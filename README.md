@@ -1,37 +1,64 @@
 # Shortlink
 
-A clean, modern URL shortener with a multi-page redirect flow — 100% static, no backend required.
+Cloudflare Workers URL shortener with admin dashboard.
 
-## Pages
+Deployed at:
+- User pages: https://shortlink.lisascott.workers.dev/
+- Admin:      https://shortlink.lisascott.workers.dev/Admin
 
-| Page | Purpose |
-|------|---------|
-| `index.html` | Home — paste a long URL, get a short link |
-| `result.html` | Shows the shortened link with copy button |
-| `go.html` | Intermediate redirect page with countdown |
-| `destination.html` | Final destination page |
+## Routes (handled by the Worker)
 
-## Flow (all client-side)
+| Route | Method | Purpose |
+|-------|--------|---------|
+| `/` | GET | Home — shorten a URL |
+| `/result.html` | GET | Shows shortened link + copy button |
+| `/go.html?code=ABC` | GET | Countdown redirect page (visitor side) |
+| `/destination.html` | GET | Final destination page |
+| `/Admin` | GET | Admin dashboard (stats + link list) |
+| `/api/shorten` | POST | Create a short link |
+| `/api/link/:code` | GET | Get link info + click count |
+| `/api/admin/stats` | GET | Aggregate admin stats |
+| `/api/admin/links` | GET | List all links |
+| `/api/admin/link/:code` | DELETE | Delete a link |
+| `/r/:code` | GET | Increment click → serve go.html |
 
-1. **index.html** — User submits a URL → a short code is generated and saved to `localStorage` → redirects to `result.html`
-2. **result.html** — Displays the short link (`go.html?code=ABC`) with a copy button
-3. Visitor opens the short link → **go.html** reads the code, looks up the destination from `localStorage`, runs a 5-second countdown
-4. **destination.html** — Final destination page
+## Pages (client-side flow)
 
-## Run locally
+1. **index.html** — User submits a URL → Worker creates short code in KV → redirects to `result.html`
+2. **result.html** — Shows `shortlink.lisascott.workers.dev/r/ABC123` with copy button + live click count
+3. Visitor opens the short link → Worker increments click → serves `go.html?code=ABC`
+4. **go.html** — Looks up destination via `/api/link/:code` → 5-second countdown → redirects
+5. **destination.html** — Final destination
 
-No install, no server. Just open `index.html` in your browser:
+## Local development
 
+```bash
+# Install dependencies
+npm install
+
+# Start local dev server (http://localhost:8787)
+npm run dev
+
+# Create a KV namespace in Cloudflare dashboard, then copy its ID into wrangler.toml
+wrangler kv namespace create LINKS
 ```
-index.html  →  result.html  →  go.html  →  destination.html
+
+## Production deploy
+
+```bash
+# Link your Cloudflare account
+wrangler login
+
+# Create KV namespace binding in dashboard (Workers & Pages → shortlink → Settings → KV)
+# Paste the KV namespace ID into wrangler.toml under [kv_namespaces] → id
+
+# Deploy
+npm run deploy
 ```
 
 ## Tech
 
-- Vanilla HTML/CSS/JS (no framework, no build step)
-- `localStorage` for client-side link storage
-- Cloudflare Pages ready
-
-## Deploy
-
-Connect this repo to Cloudflare Pages — it auto-deploys on push to `main`. No functions needed.
+- Cloudflare Workers (entry: `src/index.js`)
+- Cloudflare KV (link storage + click counts)
+- Vanilla HTML/CSS/JS (no build step for frontend)
+- Wrangler for dev/deploy

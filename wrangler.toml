@@ -1,0 +1,16 @@
+name = "shortlink"
+main = "src/index.js"
+compatibility_date = "2026-11-07"
+
+# KV namespace for storing short links and click stats
+# Bind this in Cloudflare dashboard: Workers & Pages -> shortlink -> Settings -> KV
+[kv_namespaces]
+binding = "LINKS"
+id = ""
+
+# Serve static HTML/CSS/JS from the public/ folder
+[assets]
+directory = "public"
+
+[upload]
+format = "service"
