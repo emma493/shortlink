@@ -1,14 +1,12 @@
 /* ==========================================
-   Shortlink — Result page logic
-   Fetches link stats from the backend
+   Shortlink — Result page logic (static)
+   Shows the shortened link with copy button.
    ========================================== */
 
 (function () {
   const linkInput = document.getElementById("short-link");
   const copyBtn = document.getElementById("copy-btn");
   const newBtn = document.getElementById("new-shorten-btn");
-  const clicksEl = document.querySelector(".stat-card:nth-child(1) .stat-value");
-  const todayEl = document.querySelector(".stat-card:nth-child(2) .stat-value");
 
   if (!linkInput) return;
 
@@ -30,20 +28,7 @@
   const code = params.get("code");
   const shortUrl = params.get("url");
 
-  linkInput.value = shortUrl || window.location.origin + "/r/" + code;
-
-  // Fetch real stats from backend
-  if (code) {
-    fetch(`/api/link/${code}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (clicksEl) clicksEl.textContent = data.clicks || 0;
-        if (todayEl) todayEl.textContent = data.clicks || 0;
-      })
-      .catch(() => {
-        // Silently fail — stats are optional
-      });
-  }
+  linkInput.value = shortUrl || window.location.origin + "/go.html?code=" + code;
 
   copyBtn.addEventListener("click", function () {
     const text = linkInput.value;

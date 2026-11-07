@@ -1,12 +1,3 @@
-# Dependencies
-node_modules/
-.pnpm-store/
-
-# Build outputs
-dist/
-build/
-.wrangler/
-
 # OS
 .DS_Store
 Thumbs.db
@@ -22,9 +13,6 @@ npm-debug.log*
 
 # Misc
 *.zip
-
-# Local data (generated at runtime)
-data/links.json
 
 # Unrelated browser cache (not part of project)
 deedwaifpleas.org/

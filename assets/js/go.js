@@ -1,6 +1,7 @@
 /* ==========================================
-   Shortlink — Intermediate (go) page logic
-   Countdown then redirects to destination
+   Shortlink — Intermediate (go) page logic (static)
+   Reads destination from localStorage via the code,
+   runs a 5-second countdown, then redirects.
    ========================================== */
 
 (function () {
@@ -10,9 +11,15 @@
 
   if (!timerEl) return;
 
-  // Destination URL passed via query param by the /r/:code redirect
+  // Read code from query param
   const params = new URLSearchParams(window.location.search);
-  const destination = params.get("dest");
+  const code = params.get("code");
+
+  // Look up destination in localStorage
+  let destination = null;
+  if (code) {
+    destination = localStorage.getItem("sl:" + code);
+  }
 
   // Countdown duration in seconds
   const TOTAL = 5;
@@ -44,11 +51,12 @@
   if (continueBtn && destination) {
     continueBtn.addEventListener("click", function () {
       clearInterval(timer);
-      window.location.href = decodeURIComponent(destination);
+      window.location.href = destination;
     });
   }
 
-  // Fallback: if someone arrives directly without a dest, go home
+  // Auto-redirect after countdown (optional — requires click first for UX)
+  // If no code/destination found, send home
   if (!destination) {
     setTimeout(() => {
       window.location.href = "index.html";
