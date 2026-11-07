@@ -353,6 +353,122 @@ tr:last-child td {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
+/* --- Intermediate page styles --- */
+.intermediate {
+  max-width: 560px;
+}
+
+.subtitle {
+  font-size: 0.9375rem;
+  color: #64748b;
+  margin-bottom: 2rem;
+}
+
+.btn-lg {
+  padding: 0.875rem 1.75rem;
+  font-size: 1rem;
+  width: 100%;
+  max-width: 320px;
+}
+
+.btn-loading {
+  position: relative;
+  color: transparent !important;
+}
+
+.btn-loading::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: -0.625rem;
+  margin-left: -0.625rem;
+  border: 2px solid #ffffff;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1.75rem 0;
+  color: #94a3b8;
+  font-size: 0.875rem;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #e2e8f0;
+}
+
+.skip-info,
+.about {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #f1f5f9;
+  text-align: left;
+}
+
+.skip-info h3,
+.about h3 {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.skip-info p,
+.about p {
+  font-size: 0.9375rem;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+/* --- Page footer (intermediate page footer links) --- */
+.page-footer {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.footer-links {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.footer-links a {
+  font-size: 0.8125rem;
+  color: #64748b;
+  transition: color 0.2s;
+}
+
+.footer-links a:hover {
+  color: #4f46e5;
+}
+
+.copyright {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
 /* --- Responsive --- */
 @media (max-width: 640px) {
   .container {

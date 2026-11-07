@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Page 1 — Shortlink" />
-  <title>Shortlink — Page 1</title>
+  <meta name="description" content="Shortlink — Continue to your destination" />
+  <title>Shortlink — Continue</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -16,6 +16,7 @@
 
   <main class="page-body">
     <div class="container">
+      <!-- Progress indicator -->
       <div class="progress">
         <div class="step active"></div>
         <div class="step"></div>
@@ -24,27 +25,57 @@
         <div class="step"></div>
       </div>
 
-      <div class="page-card">
+      <!-- Main card: intermediate page -->
+      <div class="page-card intermediate">
         <div class="page-number">1 of 5</div>
-        <h1>Welcome to Shortlink</h1>
-        <p>This is page 1. Click "Next" to continue through the flow. Each page you visit is tracked for visitor statistics.</p>
 
-        <div class="nav-actions">
-          <button type="button" class="btn btn-primary" onclick="location.href='page-2.html'">
-            Next <span aria-hidden="true">→</span>
-          </button>
+        <h1>Continue to your destination</h1>
+        <p class="subtitle">
+          Please verify you're human to proceed to the destination link.
+        </p>
+
+        <!-- Primary CTA -->
+        <button type="button" id="continue-btn" class="btn btn-primary btn-lg">
+          Click here to continue
+        </button>
+
+        <div class="divider">
+          <span>or</span>
         </div>
+
+        <!-- Secondary: skip info -->
+        <div class="skip-info">
+          <h3>How can I skip this page?</h3>
+          <p>
+            Complete the verification above. Once it reaches 100%, follow the
+            on-screen instructions to proceed to your destination.
+          </p>
+        </div>
+
+        <!-- About section -->
+        <div class="about">
+          <h3>What is Shortlink?</h3>
+          <p>
+            Shortlink is a free tool to shorten and share links. Each visit
+            helps support the service.
+          </p>
+        </div>
+      </div>
+
+      <!-- Footer links -->
+      <div class="page-footer">
+        <div class="footer-links">
+          <a href="#">Privacy Policy</a>
+          <a href="#">Terms of Use</a>
+          <a href="#">Abuse / DMCA</a>
+          <a href="#">Contact</a>
+        </div>
+        <p class="copyright">© 2026 Shortlink. All rights reserved.</p>
       </div>
     </div>
   </main>
 
-  <footer class="site-footer">
-    <div class="container">
-      <p>&copy; 2026 Shortlink. All rights reserved.</p>
-      <a href="/Admin" class="btn btn-outline btn-sm">Admin dashboard</a>
-    </div>
-  </footer>
-
   <script src="js/track.js"></script>
+  <script src="js/index.js"></script>
 </body>
 </html>
