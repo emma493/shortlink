@@ -1,6 +1,7 @@
 /* ==========================================
    Shortlink — Result page logic (Worker API)
-   GET /api/link/:code → fetch stats
+   Shows short link + copy button.
+   Tracks page view on load.
    ========================================== */
 
 (function () {
@@ -24,12 +25,32 @@
     setTimeout(() => toast.classList.remove("show"), 2500);
   }
 
+  // Send a tracking event (fire-and-forget)
+  async function track(type, extra = {}) {
+    try {
+      await fetch("/api/track", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type,
+          path: window.location.pathname,
+          ...extra,
+        }),
+      });
+    } catch (e) {
+      // Tracking failures should never break the UI
+    }
+  }
+
   // Parse query params
   const params = new URLSearchParams(window.location.search);
   const code = params.get("code");
   const shortUrl = params.get("url");
 
   linkInput.value = shortUrl || window.location.origin + "/r/" + code;
+
+  // Track page view on load
+  track("page_view", { code });
 
   // Fetch real stats from the Worker API
   if (code) {

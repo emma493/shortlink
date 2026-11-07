@@ -34,5 +34,23 @@
       <p>&copy; 2026 Shortlink. All rights reserved.</p>
     </div>
   </footer>
+
+  <script>
+    // Track arrival at final destination (fire-and-forget)
+    (function () {
+      try {
+        fetch("/api/track", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "page_view",
+            path: window.location.pathname,
+          }),
+        });
+      } catch (e) {
+        // Tracking failures should never break the UI
+      }
+    })();
+  </script>
 </body>
 </html>

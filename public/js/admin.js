@@ -1,5 +1,6 @@
 /* ==========================================
    Shortlink — Admin dashboard logic (Worker API)
+   READ-ONLY analytics — admin does NOT create links.
    GET  /api/admin/stats   → aggregate numbers
    GET  /api/admin/links   → full link list
    DELETE /api/admin/link/:code → delete a link
@@ -43,16 +44,11 @@
     return new Date(iso).toLocaleString();
   }
 
-  // Load stats + links
+  // Load stats + links (read-only)
   async function load() {
     try {
-      const [statsRes, linksRes] = await Promise.all([
-        fetch("/api/admin/stats"),
-        fetch("/api/admin/links"),
-      ]);
-
-      const stats = await statsRes.json();
-      const links = await linksRes.json();
+      const res = await fetch("/api/admin/stats");
+      const stats = await res.json();
 
       // Update stat cards
       totalLinksEl.textContent = stats.totalLinks || 0;
@@ -71,7 +67,7 @@
       // Render table
       tableBody.innerHTML = "";
 
-      if (!links || links.length === 0) {
+      if (!stats.links || stats.links.length === 0) {
         emptyEl.style.display = "block";
         tableBody.parentElement.parentElement.style.display = "none";
         return;
@@ -80,7 +76,7 @@
       emptyEl.style.display = "none";
       tableBody.parentElement.parentElement.style.display = "";
 
-      for (const link of links) {
+      for (const link of stats.links) {
         const row = document.createElement("tr");
 
         const shortUrl = window.location.origin + "/r/" + escapeHtml(link.code);
@@ -105,17 +101,17 @@
         tableBody.appendChild(row);
       }
 
-      // Wire up delete buttons
+      // Wire up delete buttons (admin-only action)
       tableBody.querySelectorAll("button[data-code]").forEach((btn) => {
         btn.addEventListener("click", async function () {
           const code = this.getAttribute("data-code");
           if (!confirm("Delete short link " + code + "?")) return;
 
           try {
-            const res = await fetch("/api/admin/link/" + encodeURIComponent(code), {
+            const delRes = await fetch("/api/admin/link/" + encodeURIComponent(code), {
               method: "DELETE",
             });
-            if (res.ok) {
+            if (delRes.ok) {
               showToast("Link deleted");
               load(); // reload
             } else {

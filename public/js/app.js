@@ -1,6 +1,7 @@
 /* ==========================================
    Shortlink — Home page logic (Worker API)
-   POST /api/shorten → navigate to result.html
+   User pastes URL → POST /api/shorten → track → result.html
+   Also tracks page views via POST /api/track
    ========================================== */
 
 (function () {
@@ -25,6 +26,23 @@
     setTimeout(() => toast.classList.remove("show"), 3000);
   }
 
+  // Send a tracking event to the Worker (fire-and-forget)
+  async function track(type, extra = {}) {
+    try {
+      await fetch("/api/track", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type,
+          path: window.location.pathname,
+          ...extra,
+        }),
+      });
+    } catch (e) {
+      // Tracking failures should never break the UI
+    }
+  }
+
   // Validate URL
   function isValidUrl(value) {
     try {
@@ -34,6 +52,9 @@
       return false;
     }
   }
+
+  // Track page view on load
+  track("page_view");
 
   form.addEventListener("submit", async function (e) {
     e.preventDefault();
@@ -71,6 +92,9 @@
         btn.disabled = false;
         return;
       }
+
+      // Track the shorten action
+      await track("link_created", { code: data.code, shortUrl: data.shortUrl });
 
       // Navigate to result page with the real short link from the Worker
       const resultUrl =

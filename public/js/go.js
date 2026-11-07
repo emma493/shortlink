@@ -1,7 +1,8 @@
 /* ==========================================
    Shortlink — Intermediate (go) page logic (Worker API)
-   GET /api/link/:code → destination URL
-   Countdown → redirect to destination
+   Reads destination via /api/link/:code,
+   runs 5-second countdown, then redirects.
+   Tracks page view and the final click.
    ========================================== */
 
 (function () {
@@ -21,6 +22,23 @@
   // Countdown duration in seconds
   const TOTAL = 5;
   let remaining = TOTAL;
+
+  // Send a tracking event (fire-and-forget)
+  async function track(type, extra = {}) {
+    try {
+      await fetch("/api/track", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type,
+          path: window.location.pathname,
+          ...extra,
+        }),
+      });
+    } catch (e) {
+      // Tracking failures should never break the UI
+    }
+  }
 
   function updateTimer() {
     timerEl.textContent = remaining;
@@ -44,7 +62,10 @@
   const timer = setInterval(updateTimer, 1000);
   updateTimer(); // immediate first call
 
-  // Fetch destination from Worker API
+  // Track page view on load
+  track("page_view", { code });
+
+  // Fetch destination from Worker API (click is already tracked server-side on /r/:code)
   if (code) {
     fetch("/api/link/" + encodeURIComponent(code))
       .then((r) => r.json())
@@ -64,8 +85,10 @@
 
   // Continue button -> go to destination
   if (continueBtn && destination) {
-    continueBtn.addEventListener("click", function () {
+    continueBtn.addEventListener("click", async function () {
       clearInterval(timer);
+      // Track the explicit continue click
+      await track("link_clicked", { code });
       window.location.href = destination;
     });
   }
