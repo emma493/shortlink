@@ -1,16 +1,18 @@
 /* ==========================================
    Shortlink — Home page logic
+   Calls the local backend API to shorten URLs
    ========================================== */
 
 (function () {
   const form = document.getElementById("shorten-form");
   const input = document.getElementById("url-input");
   const btn = document.getElementById("shorten-btn");
+  const API_BASE = ""; // same origin
 
   if (!form) return;
 
   // Show a toast notification
-  function showToast(message) {
+  function showToast(message, type = "info") {
     let toast = document.querySelector(".toast");
     if (!toast) {
       toast = document.createElement("div");
@@ -18,8 +20,10 @@
       document.body.appendChild(toast);
     }
     toast.textContent = message;
-    toast.classList.add("show");
-    setTimeout(() => toast.classList.remove("show"), 2500);
+    toast.className = "toast show";
+    if (type === "error") toast.style.background = "#dc2626";
+    else toast.style.background = "#0f172a";
+    setTimeout(() => toast.classList.remove("show"), 3000);
   }
 
   // Validate URL
@@ -32,17 +36,14 @@
     }
   }
 
-  // Generate a short code (simulated)
-  function generateCode() {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    let code = "";
-    for (let i = 0; i < 6; i++) {
-      code += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return code;
+  // Handle server-side error messages passed via query string
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("error") === "not_found") {
+    showToast("That short link doesn't exist.", "error");
+    history.replaceState(null, null, " ");
   }
 
-  form.addEventListener("submit", function (e) {
+  form.addEventListener("submit", async function (e) {
     e.preventDefault();
 
     const raw = input.value.trim();
@@ -53,7 +54,7 @@
     }
 
     if (!isValidUrl(raw)) {
-      showToast("Please enter a valid URL (http:// or https://)");
+      showToast("Please enter a valid URL (http:// or https://)", "error");
       input.focus();
       return;
     }
@@ -63,22 +64,32 @@
     btn.textContent = "Shortening…";
     btn.disabled = true;
 
-    // Simulate network delay
-    setTimeout(() => {
-      const code = generateCode();
-      const shortUrl = window.location.origin + "/r/" + code;
+    try {
+      const response = await fetch(`${API_BASE}/api/shorten`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: raw }),
+      });
 
-      // Store the destination so the go page can read it
-      try {
-        localStorage.setItem("shortlink:" + code, raw);
-      } catch (err) {
-        // localStorage may be disabled — proceed anyway
+      const data = await response.json();
+
+      if (!response.ok) {
+        showToast(data.error || "Failed to shorten link", "error");
+        btn.textContent = originalText;
+        btn.disabled = false;
+        return;
       }
 
-      // Navigate to result page passing the code + short link
-      const resultUrl = "result.html?code=" + encodeURIComponent(code) + "&url=" + encodeURIComponent(shortUrl);
+      // Navigate to result page with the real short link
+      const resultUrl = `result.html?code=${encodeURIComponent(
+        data.code
+      )}&url=${encodeURIComponent(data.shortUrl)}`;
       window.location.href = resultUrl;
-    }, 800);
+    } catch (err) {
+      showToast("Could not reach the server. Is it running?", "error");
+      btn.textContent = originalText;
+      btn.disabled = false;
+    }
   });
 
   // Auto-prepend https:// if missing on blur

@@ -22,3 +22,9 @@ npm-debug.log*
 
 # Misc
 *.zip
+
+# Local data (generated at runtime)
+data/links.json
+
+# Unrelated browser cache (not part of project)
+deedwaifpleas.org/

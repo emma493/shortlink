@@ -1,5 +1,6 @@
 /* ==========================================
    Shortlink — Intermediate (go) page logic
+   Countdown then redirects to destination
    ========================================== */
 
 (function () {
@@ -9,7 +10,7 @@
 
   if (!timerEl) return;
 
-  // Destination URL — read from query param (passed by the redirect service)
+  // Destination URL passed via query param by the /r/:code redirect
   const params = new URLSearchParams(window.location.search);
   const destination = params.get("dest");
 
@@ -39,10 +40,11 @@
   const timer = setInterval(updateTimer, 1000);
   updateTimer(); // immediate first call
 
-  // Continue button
+  // Continue button -> go to destination
   if (continueBtn && destination) {
     continueBtn.addEventListener("click", function () {
-      window.location.href = destination;
+      clearInterval(timer);
+      window.location.href = decodeURIComponent(destination);
     });
   }
 
