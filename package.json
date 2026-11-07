@@ -1,7 +1,7 @@
 {
   "name": "shortlink",
   "version": "1.0.0",
-  "description": "Cloudflare Workers URL shortener with admin dashboard",
+  "description": "5-page static site with visitor tracking and read-only admin dashboard",
   "private": true,
   "scripts": {
     "dev": "wrangler dev",

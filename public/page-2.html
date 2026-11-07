@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Page 2 — Shortlink" />
+  <title>Shortlink — Page 2</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <div class="logo">Short<span class="accent">link</span></div>
+    </div>
+  </header>
+
+  <main class="page-body">
+    <div class="container">
+      <div class="progress">
+        <div class="step done"></div>
+        <div class="step active"></div>
+        <div class="step"></div>
+        <div class="step"></div>
+        <div class="step"></div>
+      </div>
+
+      <div class="page-card">
+        <div class="page-number">2 of 5</div>
+        <h1>Step Two</h1>
+        <p>You're on page 2. Your visit to this page has been recorded. Continue to page 3.</p>
+
+        <div class="nav-actions">
+          <button type="button" class="btn btn-outline" onclick="location.href='index.html'">
+            <span aria-hidden="true">←</span> Previous
+          </button>
+          <button type="button" class="btn btn-primary" onclick="location.href='page-3.html'">
+            Next <span aria-hidden="true">→</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>&copy; 2026 Shortlink. All rights reserved.</p>
+      <a href="/Admin" class="btn btn-outline btn-sm">Admin dashboard</a>
+    </div>
+  </footer>
+
+  <script src="js/track.js"></script>
+</body>
+</html>

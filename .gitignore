@@ -23,7 +23,7 @@ npm-debug.log*
 # Misc
 *.zip
 
-# Wrangler / wrangler.toml secrets (never commit KV IDs with real values if sensitive)
+# Wrangler
 .dev.vars
 .wrangler/
 

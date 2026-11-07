@@ -11,7 +11,7 @@
   <header class="site-header">
     <div class="container">
       <div class="logo">Short<span class="accent">link</span></div>
-      <a href="/" class="btn btn-outline btn-sm">Back to shortener</a>
+      <a href="index.html" class="btn btn-outline btn-sm">Back to pages</a>
     </div>
   </header>
 
@@ -20,24 +20,24 @@
       <div class="admin-card">
         <div class="admin-header">
           <div>
-            <h2 style="font-size:1.25rem; font-weight:700; color:#0f172a; margin-bottom:0.25rem;">Admin Dashboard</h2>
-            <p style="font-size:0.875rem; color:#64748b;">Manage your short links and view statistics.</p>
+            <h2>Admin Dashboard</h2>
+            <p style="font-size:0.875rem; color:#64748b;">Read-only visitor statistics.</p>
           </div>
           <button type="button" id="refresh-btn" class="btn btn-outline btn-sm">Refresh</button>
         </div>
 
         <div class="admin-stats">
           <div class="admin-stat">
-            <span class="admin-stat-value" id="stat-total-links">0</span>
-            <span class="admin-stat-label">Total Links</span>
+            <span class="admin-stat-value" id="stat-total-views">0</span>
+            <span class="admin-stat-label">Total Page Views</span>
           </div>
           <div class="admin-stat">
-            <span class="admin-stat-value" id="stat-total-clicks">0</span>
-            <span class="admin-stat-label">Total Clicks</span>
+            <span class="admin-stat-value" id="stat-total-pages">0</span>
+            <span class="admin-stat-label">Pages Visited</span>
           </div>
           <div class="admin-stat">
-            <span class="admin-stat-value" id="stat-top-link">—</span>
-            <span class="admin-stat-label">Top Link</span>
+            <span class="admin-stat-value" id="stat-top-page">—</span>
+            <span class="admin-stat-label">Most Visited Page</span>
           </div>
         </div>
 
@@ -45,21 +45,36 @@
           <table>
             <thead>
               <tr>
-                <th>Short Code</th>
-                <th>Destination</th>
-                <th>Clicks</th>
-                <th>Created</th>
-                <th>Actions</th>
+                <th>Page</th>
+                <th>Views</th>
+                <th>Last Visit</th>
               </tr>
             </thead>
-            <tbody id="links-table-body">
+            <tbody id="pages-table-body">
               <!-- rows injected by JS -->
             </tbody>
           </table>
         </div>
 
+        <div style="margin-top:2rem;">
+          <h3 style="font-size:1rem; font-weight:600; color:#0f172a; margin-bottom:0.75rem;">Recent Visitor Activity</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Page</th>
+                  <th>Time</th>
+                </tr>
+              </thead>
+              <tbody id="events-table-body">
+                <!-- rows injected by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         <div id="admin-empty" class="empty-state" style="display:none;">
-          <p>No short links yet. Create one at the home page.</p>
+          <p>No visitor data yet. Visit the pages to generate statistics.</p>
         </div>
       </div>
     </div>
