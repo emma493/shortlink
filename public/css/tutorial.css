@@ -29,6 +29,7 @@
   backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
   transition:transform .55s cubic-bezier(.2,1.25,.35,1),opacity .3s ease;
 }
+.slt-tip.top{bottom:auto}
 .slt-toast.on,.slt-tip.on{transform:translate(-50%,0);opacity:1;pointer-events:auto}
 .slt-toast.shake,.slt-tip.shake{animation:slt-shake .5s}
 @keyframes slt-shake{

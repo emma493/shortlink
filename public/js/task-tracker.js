@@ -106,19 +106,103 @@
   var state = load();
   function save() { state.s = sign(state); writeRaw(JSON.stringify(state)); }
 
+  /* ---------------- ads already clicked on ANY page (shared, signed) ----------------
+     Every ad may be clicked only once for the whole journey (pages 2-5).
+     index.html / the final page wipe every "sl2:" key, so a new visit starts clean. */
+  var USED_KEY = "sl2:used";
+  var USED_SALT = "sl2|used|romance|k7q";
+  var USED_TTL = 3 * 60 * 60 * 1000;
+  var memoryUsed = null;
+  function usedSig(u) { return cyrb53(JSON.stringify([u.t, u.ids]) + USED_SALT); }
+  function freshUsed() { return { t: now(), ids: [], s: "" }; }
+  function loadUsed() {
+    var raw;
+    try { raw = localStorage.getItem(USED_KEY); } catch (e) { raw = memoryUsed; }
+    if (!raw) return freshUsed();
+    try {
+      var u = JSON.parse(raw);
+      if (!u || !Array.isArray(u.ids) || u.s !== usedSig(u)) return freshUsed();
+      if (now() - u.t > USED_TTL) return freshUsed();
+      return u;
+    } catch (e) { return freshUsed(); }
+  }
+  function usedIds() { return loadUsed().ids; }
+  function markUsed(id) {
+    var u = loadUsed();
+    if (u.ids.indexOf(id) < 0) u.ids.push(id);
+    u.s = usedSig(u);
+    var raw = JSON.stringify(u);
+    try { localStorage.setItem(USED_KEY, raw); } catch (e) { memoryUsed = raw; }
+  }
+
   /* ---------------- ad units ---------------- */
-  function units() { return all('.ad-slot[data-ad]:not([data-floating])'); }
+  var SOCIAL_ID = "social-bar";
+  function units() { return all('.ad-slot[data-ad]'); }
   function unitById(id) { return $('.ad-slot[data-ad="' + id + '"]'); }
   function unitLabel(id) { var u = unitById(id); return u ? (u.getAttribute("data-ad-label") || id) : id; }
   function unitOf(node) { return node && node.closest ? node.closest('.ad-slot[data-ad]') : null; }
+  function isSocial(unit) { return !!unit && unit.getAttribute("data-ad") === SOCIAL_ID; }
+  function bigEnough(n) {
+    var r = n.getBoundingClientRect();
+    return r.width >= 30 && r.height >= 20;
+  }
+
+  /* The Social Bar script draws its bar OUTSIDE the page layout (a fixed element
+     added to <body>), so it is located by looking for it:
+       1. data-social-selector on <body> (optional manual override)
+       2. anything visible inside the Social Bar slot
+       3. a visible position:fixed element on <body> that is not ours / the site's */
+  var SKIP_TAGS = /^(SCRIPT|STYLE|LINK|NOSCRIPT|META|HEADER|MAIN|FOOTER)$/;
+  var SKIP_NAMES = /slt-|dock|read-progress|petal|site-header|journey|toast/i;
+  var socialCache = { at: 0, node: null };
+  function socialNode() {            // cached + fail-safe: can never throw or slow the page down
+    var t = now();
+    if (t - socialCache.at < 400 && (!socialCache.node || document.contains(socialCache.node))) return socialCache.node;
+    var n = null;
+    try { n = findSocialNode(); } catch (e) { n = null; }
+    socialCache.at = t; socialCache.node = n;
+    return n;
+  }
+  function looksLikeOverlay(n) {     // full-screen click layers from other scripts are NOT the social bar
+    var r = n.getBoundingClientRect();
+    return r.width * r.height > 0.35 * window.innerWidth * window.innerHeight;
+  }
+  function findSocialNode() {
+    var sel = body.getAttribute("data-social-selector");
+    if (sel) { try { var s = $(sel); if (s && bigEnough(s)) return s; } catch (e) {} }
+    var slot = unitById(SOCIAL_ID);
+    if (slot) {
+      var inner = all("iframe, div, a, img, ins", slot);
+      for (var i = 0; i < inner.length; i++) if (bigEnough(inner[i]) && !looksLikeOverlay(inner[i])) return inner[i];
+    }
+    var kids = all("body > *").concat([].slice.call(document.documentElement.children));
+    for (var k = 0; k < kids.length; k++) {
+      var n = kids[k];
+      if (n.nodeType !== 1 || n === document.body || SKIP_TAGS.test(n.tagName)) continue;
+      if (n.closest && n.closest(".ad-slot")) continue;
+      if (SKIP_NAMES.test((n.className && n.className.baseVal != null ? n.className.baseVal : n.className) + " " + (n.id || ""))) continue;
+      var cs = getComputedStyle(n);
+      if (cs.position !== "fixed" || cs.display === "none" || cs.visibility === "hidden" || cs.pointerEvents === "none" || cs.opacity === "0") continue;
+      if (bigEnough(n) && !looksLikeOverlay(n)) return n;
+    }
+    return null;
+  }
+  function isFixedNode(n) {
+    for (; n && n.nodeType === 1 && n !== document.documentElement; n = n.parentElement) {
+      if (getComputedStyle(n).position === "fixed") return true;
+    }
+    return false;
+  }
+
   function adNode(unit) {
+    if (isSocial(unit)) return socialNode() || unit;
     return unit.querySelector("iframe") || unit.querySelector('[id^="container-"]') || unit;
   }
   function isLoaded(unit) {
+    if (isSocial(unit)) return !!socialNode();
     var n = unit.querySelector('iframe, ins, [id^="container-"] > *, a, img');
     if (!n) return false;
-    var r = n.getBoundingClientRect();
-    return r.width >= 30 && r.height >= 20;
+    return bigEnough(n);
   }
   function loadedIds() { return units().filter(isLoaded).map(function (u) { return u.getAttribute("data-ad"); }); }
 
@@ -132,13 +216,21 @@
       var t0 = now();
       (function poll() {
         var ids = loadedIds();
-        if (ids.length >= CFG.tasks || now() - t0 > CFG.waitAdsMs) return finish(ids);
+        var used = usedIds();
+        var fresh = ids.filter(function (id) { return used.indexOf(id) < 0 || state.picks.indexOf(id) > -1; });
+        if (fresh.length >= CFG.tasks || now() - t0 > CFG.waitAdsMs) return finish(ids, used);
         setTimeout(poll, 300);
       })();
-      function finish(ids) {
+      function finish(ids, used) {
         var keep = state.picks.filter(function (id) { return state.done.indexOf(id) > -1 || ids.indexOf(id) > -1; });
-        var pool = shuffle(ids.filter(function (id) { return keep.indexOf(id) < 0; }));
+        /* only ads that were never clicked on an earlier page */
+        var pool = shuffle(ids.filter(function (id) { return keep.indexOf(id) < 0 && used.indexOf(id) < 0; }));
         while (keep.length < CFG.tasks && pool.length) keep.push(pool.pop());
+        /* last resort (some ads did not load): reuse an ad so the visitor is never stuck */
+        if (keep.length < CFG.tasks) {
+          var spare = shuffle(ids.filter(function (id) { return keep.indexOf(id) < 0; }));
+          while (keep.length < CFG.tasks && spare.length) keep.push(spare.pop());
+        }
         state.picks = keep;
         if (!keep.length && CFG.onNoAds === "waive") state.waived = true;
         save();
@@ -247,6 +339,10 @@
   function region() {
     var top = headerH() + 44;
     var bottom = window.innerHeight - tipH() - 30;
+    if (ui && ui.tip.classList.contains("top")) {   // tip parked at the top (Social Bar step)
+      top = ui.tip.offsetTop + tipH() + 14;
+      bottom = window.innerHeight - 30;
+    }
     if (bottom - top < 140) bottom = top + 140;
     return { top: top, bottom: bottom };
   }
@@ -303,6 +399,7 @@
   }
 
   function scrollToNode(node, done) {
+    if (isFixedNode(node)) { if (done) done(); return; }   // floating bar: nothing to scroll to
     var r = node.getBoundingClientRect();
     var reg = region();
     var h = reg.bottom - reg.top;
@@ -370,12 +467,16 @@
     return "Click on the <b>Ad " + word + "</b>, Spend a few seconds and come back";
   }
 
+  function tipForSocial() {
+    return "Click on the glowing <b>Social Bar</b> (the floating bar on your screen), Spend a few seconds and come back";
+  }
+
   function guideNext(withIntro) {
     var left = remaining();
     if (!left.length) return finishAll();
     target = left[0];
     var unit = unitById(target);
-    if (!unit) { // unit vanished: repick
+    if (!unit || (target === SOCIAL_ID && !socialNode())) { // unit vanished: repick
       state.picks = state.picks.filter(function (id) { return id !== target; }); save();
       return resolvePicks().then(function () { guideNext(); });
     }
@@ -391,8 +492,13 @@
     go.addEventListener("click", function () { if (focus) scrollToNode(focus.node); });
     ui.acts.appendChild(go);
     var idx = state.done.length + 1;
+    var social = target === SOCIAL_ID;
+    /* the Social Bar floats at the screen edge: park the tip at the top so it is not covered */
+    ui.tip.classList.toggle("top", social);
+    ui.tip.style.top = social ? (headerH() + 10) + "px" : "";
     focusOn(adNode(unit), {
-      radius: 12, tag: "Ad " + idx + " of " + need(), makeText: tipForAd, dynamicWord: true
+      radius: social ? 10 : 12, tag: social ? "Social Bar " + idx + " of " + need() : "Ad " + idx + " of " + need(),
+      makeText: social ? tipForSocial : tipForAd, dynamicWord: !social
     });
     show(ui.tip);
   }
@@ -402,6 +508,7 @@
     buildUI();
     var btn = $("#continue-btn");
     ui.tip.classList.add("done");
+    ui.tip.classList.remove("top"); ui.tip.style.top = "";
     refreshProgress();
     ui.acts.innerHTML = "";
     var card = $("#continue-card") || btn;
@@ -533,6 +640,7 @@
   function verified(id) {
     if (state.done.indexOf(id) < 0) state.done.push(id);
     save();
+    markUsed(id);                       // this ad can never be asked for again
     refreshProgress();
     setStatus("ok", "Ad " + state.done.length + " verified — thank you!");
     ui.spot.classList.add("ok");
@@ -577,14 +685,40 @@
     });
   }
 
+  /* Social Bar: it lives outside any slot, so watch the whole document */
+  function inSocial(e) {
+    var n = socialNode();
+    if (!n) return false;
+    var path = e.composedPath ? e.composedPath() : [];
+    return path.indexOf(n) > -1 || (e.target && n.contains && n.contains(e.target));
+  }
+  document.addEventListener("mouseover", function (e) {
+    try {
+      if (inSocial(e)) hoverId = SOCIAL_ID;
+      else if (hoverId === SOCIAL_ID) hoverId = null;
+    } catch (err) {}
+  }, true);
+  document.addEventListener("click", function (e) {
+    try {
+      if (!e.isTrusted) return;
+      if (inSocial(e)) registerClick(SOCIAL_ID);
+    } catch (err) {}
+  }, true);
+
   /* ads in cross-origin iframes: the click moves focus into the iframe */
   window.addEventListener("blur", function () {
     setTimeout(function () {
       var ae = document.activeElement;
-      if (!ae || ae.tagName !== "IFRAME") return;
-      var u = unitOf(ae);
-      if (!u || u.hasAttribute("data-floating")) return;
-      var id = u.getAttribute("data-ad");
+      if (!ae || ae === document.body) return;
+      var id, sn = socialNode();
+      if (sn && (sn === ae || (sn.contains && sn.contains(ae)))) {
+        id = SOCIAL_ID;
+      } else {
+        if (ae.tagName !== "IFRAME") return;
+        var u = unitOf(ae);
+        if (!u || isSocial(u)) return;
+        id = u.getAttribute("data-ad");
+      }
       if (!COARSE && hoverId !== id) return;        // focus was not caused by the mouse
       registerClick(id);
     }, 0);
@@ -614,7 +748,7 @@
     if (away > 15 * 60 * 1000) return;
     buildUI();
     resolvePicks().then(function () {
-      if (away >= CFG.minAwayMs) { state.done.push(id); save(); }
+      if (away >= CFG.minAwayMs) { state.done.push(id); save(); markUsed(id); }
       refreshProgress();
       guideNext();
       if (away < CFG.minAwayMs) {
