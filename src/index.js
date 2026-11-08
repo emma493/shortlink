@@ -3,14 +3,11 @@
    
    Architecture:
      - 5 static user pages (page-1 → page-5) that visitors navigate through
-     - Every page visit POSTs to /api/track (visitor statistics)
-     - Admin page (/Admin) is read-only: shows visitor stats, no link creation
-   
-   Routes:
-     POST /api/track       → record a page view event
-     GET  /api/admin/stats → aggregate visitor statistics (read-only)
-     GET  /Admin           → admin dashboard HTML
-     *                     → serve static assets from public/
+     - POST /api/track is a no-op (no KV namespace configured; tracking
+       events are written to Firestore directly from the browser via track.js)
+     - GET /api/admin/stats returns empty stats (data lives in Firestore)
+     - GET /Admin → admin dashboard HTML (reads from Firestore client-side)
+     - * → serve static assets from public/
    ========================================== */
 
 export default {
@@ -29,23 +26,35 @@ export default {
 
     /* ==========================================
        Track a page view (visitor analytics)
+       No-op: no KV namespace. Returns success so the
+       browser tracker never breaks.
        ========================================== */
     if (path === "/api/track" && method === "POST") {
-      return handleTrack(request, env, ctx);
+      return json({ ok: true });
     }
 
     /* ==========================================
        Admin stats (read-only)
+       Returns empty stats — data lives in Firestore,
+       read client-side by the Admin dashboard.
        ========================================== */
     if (path === "/api/admin/stats" && method === "GET") {
-      return handleAdminStats(env);
+      return json({
+        totalViews: 0,
+        views: 0,
+        cpa: 0,
+        completionRate: 0,
+        pageViews: {},
+        sortedPages: [],
+        recentEvents: [],
+      });
     }
 
     /* ==========================================
        Admin dashboard page
        ========================================== */
     if ((path === "/Admin" || path === "/Admin/") && method === "GET") {
-      return serveAsset(env, "/admin.html");
+      return serveAsset(env, request.url, "/Admin/index.html");
     }
 
     /* ==========================================
@@ -78,90 +87,6 @@ function json(data, status = 200) {
   });
 }
 
-/* --- KV helpers --- */
-
-async function getCounter(env, key, def = 0) {
-  const raw = await env.STATS.get(key);
-  if (!raw) return def;
-  try {
-    return parseInt(raw, 10) || def;
-  } catch (e) {
-    return def;
-  }
-}
-
-async function setCounter(env, key, value) {
-  await env.STATS.put(key, String(value));
-}
-
-async function incrementCounter(env, key, by = 1) {
-  const current = await getCounter(env, key, 0);
-  await setCounter(env, key, current + by);
-}
-
-async function getPageViews(env) {
-  const raw = await env.STATS.get("PAGE_VIEWS");
-  if (!raw) return {};
-  try {
-    return JSON.parse(raw);
-  } catch (e) {
-    return {};
-  }
-}
-
-async function setPageViews(env, views) {
-  await env.STATS.put("PAGE_VIEWS", JSON.stringify(views));
-}
-
-async function getRecentEvents(env) {
-  const raw = await env.STATS.get("EVENTS_RECENT");
-  if (!raw) return [];
-  try {
-    return JSON.parse(raw);
-  } catch (e) {
-    return [];
-  }
-}
-
-async function addRecentEvent(env, event) {
-  const events = await getRecentEvents(env);
-  events.unshift(event);
-  if (events.length > 200) events.length = 200;
-  await env.STATS.put("EVENTS_RECENT", JSON.stringify(events));
-}
-
-/* --- Route handlers --- */
-
-async function handleTrack(request, env, ctx) {
-  try {
-    const body = await request.json();
-    const { page, referrer, timestamp } = body;
-
-    const event = {
-      page: page || urlPath(request),
-      referrer: referrer || null,
-      timestamp: timestamp || new Date().toISOString(),
-      userAgent: request.headers.get("user-agent") || null,
-    };
-
-    // Increment total page views
-    await incrementCounter(env, "TOTAL_VIEWS");
-
-    // Increment per-page views
-    const views = await getPageViews(env);
-    const p = event.page;
-    views[p] = (views[p] || 0) + 1;
-    await setPageViews(env, views);
-
-    // Store recent event
-    ctx.waitUntil(addRecentEvent(env, event));
-
-    return json({ ok: true });
-  } catch (err) {
-    return json({ error: "Tracking failed" }, 500);
-  }
-}
-
 function urlPath(request) {
   try {
     return new URL(request.url).pathname;
@@ -170,28 +95,8 @@ function urlPath(request) {
   }
 }
 
-async function handleAdminStats(env) {
-  const totalViews = await getCounter(env, "TOTAL_VIEWS", 0);
-  const pageViews = await getPageViews(env);
-  const recentEvents = await getRecentEvents(env);
-
-  // Sort pages by views descending
-  const sortedPages = Object.entries(pageViews)
-    .map(([page, views]) => ({ page, views }))
-    .sort((a, b) => b.views - a.views);
-
-  return json({
-    totalViews,
-    pageViews,
-    sortedPages,
-    recentEvents,
-  });
-}
-
-/* --- Serve static assets --- */
-
-async function serveAsset(env, path) {
-  const assetUrl = new URL(path, "https://shortlink.lisascott.workers.dev");
+async function serveAsset(env, requestUrl, path) {
+  const assetUrl = new URL(path, requestUrl);
   const assetRequest = new Request(assetUrl.toString(), {
     headers: { accept: "text/html" },
   });

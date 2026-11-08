@@ -2,12 +2,6 @@ name = "shortlink"
 main = "src/index.js"
 compatibility_date = "2026-11-07"
 
-# KV namespace for visitor statistics
-# Create it in Cloudflare dashboard: Workers & Pages -> shortlink -> Settings -> KV
-[kv_namespaces]
-binding = "STATS"
-id = ""
-
 # Serve static HTML/CSS/JS from public/
 [assets]
 directory = "public"

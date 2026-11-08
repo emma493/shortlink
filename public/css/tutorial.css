@@ -1,0 +1,196 @@
+/* ==========================================================
+   Shortlink — Ad-task tutorial UI
+   Toast ("Show me"), spotlight + glowing yellow border,
+   emoji finger guide, Pro-Tip card, confetti.
+   No 3D, no canvas: plain DOM + CSS animation.
+   Nothing here is visible until the visitor taps Continue.
+   ========================================================== */
+
+:root{
+  --slt-gold:#ffd54a;
+  --slt-gold-soft:rgba(255,213,74,.55);
+  --slt-ok:#34d399;
+  --slt-dim:rgba(14,5,16,.66);
+  --slt-card:linear-gradient(160deg,rgba(58,18,48,.96),rgba(31,12,30,.97));
+}
+
+/* ---------- shared bits ---------- */
+.slt-toast,.slt-tip{
+  position:fixed;left:50%;z-index:9200;
+  width:min(94vw,440px);
+  bottom:max(14px,env(safe-area-inset-bottom));
+  transform:translate(-50%,calc(100% + 40px));
+  opacity:0;pointer-events:none;
+  color:var(--blush,#f8dce3);font-family:var(--sans,system-ui,sans-serif);
+  background:var(--slt-card);
+  border:1px solid rgba(255,213,74,.38);
+  border-radius:20px;
+  box-shadow:0 22px 50px -14px rgba(0,0,0,.85),0 0 0 4px rgba(255,213,74,.07),inset 0 1px 0 rgba(255,255,255,.07);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  transition:transform .55s cubic-bezier(.2,1.25,.35,1),opacity .3s ease;
+}
+.slt-toast.on,.slt-tip.on{transform:translate(-50%,0);opacity:1;pointer-events:auto}
+.slt-toast.shake,.slt-tip.shake{animation:slt-shake .5s}
+@keyframes slt-shake{
+  0%,100%{transform:translate(-50%,0)}
+  20%{transform:translate(calc(-50% - 9px),0)}
+  40%{transform:translate(calc(-50% + 9px),0)}
+  60%{transform:translate(calc(-50% - 5px),0)}
+  80%{transform:translate(calc(-50% + 5px),0)}
+}
+.slt-toast b,.slt-tip b{color:var(--slt-gold);font-weight:800}
+
+/* ---------- 1. the toast ---------- */
+.slt-toast{padding:16px 16px 16px 16px;display:grid;grid-template-columns:auto 1fr;gap:12px 14px;align-items:center}
+.slt-ico{
+  width:48px;height:48px;border-radius:15px;display:grid;place-items:center;font-size:25px;
+  background:linear-gradient(145deg,#ff7d9b,var(--rose-deep,#c43560));
+  box-shadow:0 8px 18px -6px rgba(232,88,122,.9),inset 0 1px 0 rgba(255,255,255,.35);
+  animation:slt-bob 2.4s ease-in-out infinite;
+}
+@keyframes slt-bob{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-3px) rotate(4deg)}}
+.slt-toast .slt-copy strong{display:block;font-family:var(--serif,Georgia,serif);font-weight:600;font-size:19px;line-height:1.25;color:#fff}
+.slt-toast .slt-copy span{display:block;margin-top:3px;font-size:14.5px;line-height:1.4;color:var(--muted,#b79aaa)}
+.slt-toast .slt-row{grid-column:1/-1;display:flex;align-items:center;gap:12px}
+.slt-dots{display:flex;align-items:center;gap:6px;flex:1;min-width:0;font-size:12.5px;font-weight:700;color:var(--muted,#b79aaa);white-space:nowrap}
+.slt-dots i{width:22px;height:8px;border-radius:99px;background:rgba(248,220,227,.18);transition:background .4s,box-shadow .4s}
+.slt-dots i.on{background:var(--slt-ok);box-shadow:0 0 10px rgba(52,211,153,.6)}
+.slt-dots em{font-style:normal;margin-left:4px}
+
+.slt-btn{
+  position:relative;flex:none;border:0;cursor:pointer;font:inherit;font-weight:800;font-size:16px;color:#fff;
+  padding:12px 22px;border-radius:999px;min-height:46px;
+  background:linear-gradient(135deg,#ff7d9b 0%,var(--rose,#e8587a) 45%,var(--rose-deep,#c43560) 100%);
+  box-shadow:0 10px 22px -8px rgba(232,88,122,.95),inset 0 1px 0 rgba(255,255,255,.3);
+  transition:transform .15s ease,filter .15s ease;
+  overflow:hidden;
+}
+.slt-btn::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.38) 50%,transparent 65%);
+  transform:translateX(-120%);animation:slt-shine 2.6s ease-in-out infinite;
+}
+@keyframes slt-shine{0%,55%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
+.slt-btn:hover{transform:translateY(-1px)}
+.slt-btn:active{transform:translateY(1px) scale(.98)}
+.slt-btn[disabled]{filter:grayscale(.4) brightness(.85);cursor:progress}
+.slt-btn .slt-spin{
+  display:inline-block;width:14px;height:14px;margin-right:8px;vertical-align:-2px;border-radius:50%;
+  border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;animation:slt-rot .8s linear infinite;
+}
+@keyframes slt-rot{to{transform:rotate(360deg)}}
+.slt-btn.ghost{background:rgba(248,220,227,.1);box-shadow:none;color:var(--blush,#f8dce3);font-weight:700}
+.slt-btn.ghost::after{display:none}
+
+/* ---------- 2. spotlight + glowing yellow border ---------- */
+.slt-spot{
+  position:fixed;z-index:9000;pointer-events:none;
+  border:3px solid var(--slt-gold);border-radius:14px;
+  box-shadow:0 0 0 100vmax var(--slt-dim),0 0 22px 4px var(--slt-gold-soft),inset 0 0 16px rgba(255,213,74,.35);
+  opacity:0;visibility:hidden;
+  transition:opacity .35s ease,border-color .3s ease;
+}
+.slt-spot.on{opacity:1;visibility:visible;animation:slt-glow 1.7s ease-in-out infinite}
+.slt-spot.off{visibility:hidden}
+@keyframes slt-glow{
+  0%,100%{box-shadow:0 0 0 100vmax var(--slt-dim),0 0 14px 2px rgba(255,213,74,.55),inset 0 0 10px rgba(255,213,74,.25)}
+  50%{box-shadow:0 0 0 100vmax var(--slt-dim),0 0 38px 10px rgba(255,213,74,.95),inset 0 0 24px rgba(255,213,74,.5)}
+}
+.slt-spot.ok{border-color:var(--slt-ok);animation:slt-glow-ok 1.2s ease-in-out infinite}
+@keyframes slt-glow-ok{
+  0%,100%{box-shadow:0 0 0 100vmax var(--slt-dim),0 0 18px 3px rgba(52,211,153,.6),inset 0 0 12px rgba(52,211,153,.3)}
+  50%{box-shadow:0 0 0 100vmax var(--slt-dim),0 0 40px 10px rgba(52,211,153,.95),inset 0 0 24px rgba(52,211,153,.5)}
+}
+.slt-spot .slt-tag{
+  position:absolute;left:50%;top:-14px;transform:translate(-50%,-100%);
+  padding:4px 12px;border-radius:99px;white-space:nowrap;
+  font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  color:#2b1500;background:var(--slt-gold);box-shadow:0 6px 14px -4px rgba(0,0,0,.6);
+}
+.slt-spot.ok .slt-tag{background:var(--slt-ok);color:#022c1e}
+.slt-spot.noTag .slt-tag{display:none}
+
+/* ---------- 3. emoji finger ---------- */
+.slt-finger{
+  position:fixed;z-index:9100;width:64px;height:64px;pointer-events:none;
+  opacity:0;visibility:hidden;transition:opacity .3s ease;
+}
+.slt-finger.on{opacity:1;visibility:visible}
+.slt-hand{
+  position:absolute;inset:0;display:grid;place-items:center;
+  font-size:50px;line-height:1;
+  font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;
+  filter:drop-shadow(0 6px 8px rgba(0,0,0,.55));
+}
+.slt-finger.up .slt-hand{animation:slt-poke-up 1.05s ease-in-out infinite}
+.slt-finger.down .slt-hand{animation:slt-poke-down 1.05s ease-in-out infinite}
+@keyframes slt-poke-up{0%,100%{transform:translateY(8px)}50%{transform:translateY(-8px)}}
+@keyframes slt-poke-down{0%,100%{transform:translateY(-8px)}50%{transform:translateY(8px)}}
+.slt-ripple{
+  position:absolute;left:50%;width:34px;height:34px;margin-left:-17px;border-radius:50%;
+  border:3px solid var(--slt-gold);opacity:0;
+}
+.slt-finger.up .slt-ripple{top:-6px}
+.slt-finger.down .slt-ripple{bottom:-6px}
+.slt-finger.on .slt-ripple{animation:slt-ripple 1.05s ease-out infinite}
+@keyframes slt-ripple{0%{transform:scale(.4);opacity:.95}70%{opacity:.25}100%{transform:scale(1.8);opacity:0}}
+
+/* ---------- 4. Pro Tip card ---------- */
+.slt-tip{padding:14px 16px 14px}
+.slt-tip-head{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.slt-badge{
+  display:inline-flex;align-items:center;gap:6px;padding:4px 11px 4px 9px;border-radius:99px;
+  font-size:12px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
+  color:#2b1500;background:linear-gradient(135deg,#ffe58a,var(--slt-gold));
+  box-shadow:0 4px 12px -4px rgba(255,213,74,.9);
+}
+.slt-tip .slt-dots{justify-content:flex-end}
+.slt-x{
+  flex:none;width:30px;height:30px;border:0;border-radius:50%;cursor:pointer;
+  background:rgba(248,220,227,.1);color:var(--blush,#f8dce3);font-size:18px;line-height:1;
+}
+.slt-x:hover{background:rgba(248,220,227,.2)}
+.slt-tip-text{margin:0;font-size:17px;line-height:1.45;font-weight:700;color:#fff}
+.slt-bar{height:4px;border-radius:99px;margin:12px 0 10px;background:rgba(248,220,227,.14);overflow:hidden}
+.slt-bar i{display:block;height:100%;width:0;border-radius:inherit;background:linear-gradient(90deg,var(--slt-gold),var(--slt-ok));transition:width .6s cubic-bezier(.3,1,.4,1)}
+.slt-status{
+  display:flex;align-items:center;gap:9px;min-height:22px;font-size:14px;line-height:1.35;color:var(--muted,#b79aaa);
+}
+.slt-status .pulse{
+  flex:none;width:9px;height:9px;border-radius:50%;background:var(--slt-gold);
+  box-shadow:0 0 0 0 rgba(255,213,74,.7);animation:slt-pulse 1.5s infinite;
+}
+@keyframes slt-pulse{0%{box-shadow:0 0 0 0 rgba(255,213,74,.7)}80%,100%{box-shadow:0 0 0 10px rgba(255,213,74,0)}}
+.slt-status.ok{color:var(--slt-ok);font-weight:700}
+.slt-status.ok .pulse{background:var(--slt-ok);animation:none}
+.slt-status.warn{color:#ffb4a2;font-weight:700}
+.slt-status.warn .pulse{background:#ff8a70;animation:none}
+.slt-status.go{color:var(--slt-gold)}
+.slt-tip .slt-acts{display:flex;gap:10px;margin-top:10px}
+.slt-tip .slt-acts .slt-btn{flex:1;min-height:42px;padding:9px 14px;font-size:14.5px}
+.slt-tip .slt-acts:empty{display:none}
+
+/* ---------- final state ---------- */
+.slt-tip.done{border-color:rgba(52,211,153,.55);box-shadow:0 22px 50px -14px rgba(0,0,0,.85),0 0 0 4px rgba(52,211,153,.12)}
+.slt-tip.done .slt-badge{background:linear-gradient(135deg,#8af0c6,var(--slt-ok));color:#022c1e;box-shadow:0 4px 12px -4px rgba(52,211,153,.9)}
+.btn.slt-target{position:relative;z-index:1}
+
+/* ---------- confetti ---------- */
+.slt-conf{
+  position:fixed;z-index:9300;left:0;top:0;pointer-events:none;font-size:22px;line-height:1;
+  animation:slt-conf 1.3s cubic-bezier(.15,.7,.3,1) forwards;
+}
+@keyframes slt-conf{
+  0%{transform:translate(0,0) scale(.4) rotate(0);opacity:1}
+  100%{transform:translate(var(--dx),var(--dy)) scale(1.1) rotate(var(--rot));opacity:0}
+}
+
+@media (max-width:420px){
+  .slt-toast .slt-copy strong{font-size:17.5px}
+  .slt-tip-text{font-size:16px}
+  .slt-hand{font-size:46px}
+}
+@media (prefers-reduced-motion:reduce){
+  .slt-toast,.slt-tip{transition:opacity .2s ease}
+  .slt-spot.on{box-shadow:0 0 0 100vmax var(--slt-dim),0 0 24px 6px var(--slt-gold-soft)}
+}

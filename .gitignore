@@ -29,3 +29,7 @@ npm-debug.log*
 
 # Unrelated browser cache (not part of project)
 deedwaifpleas.org/
+
+# External source references (not part of project)
+blog/
+"New folder/"
