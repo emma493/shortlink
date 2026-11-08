@@ -5,11 +5,3 @@ compatibility_date = "2026-11-07"
 # Serve static HTML/CSS/JS from public/
 [assets]
 directory = "public"
-
-# Exclude git internals from asset upload
-[upload]
-exclude = [
-  ".git/**",
-  ".gitignore",
-  "Admin Reference/**",
-]

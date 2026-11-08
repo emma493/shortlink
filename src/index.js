@@ -3,10 +3,7 @@
    
    Architecture:
      - 5 static user pages (page-1 → page-5) that visitors navigate through
-     - POST /api/track is a no-op (no KV namespace configured; tracking
-       events are written to Firestore directly from the browser via track.js)
-     - GET /api/admin/stats returns empty stats (data lives in Firestore)
-     - GET /Admin → admin dashboard HTML (reads from Firestore client-side)
+     - POST /api/track → records page-view event (no-op, writes to Firestore from browser)
      - * → serve static assets from public/
    ========================================== */
 
@@ -26,39 +23,11 @@ export default {
 
     /* ==========================================
        Track a page view (visitor analytics)
-       No-op: no KV namespace. Returns success so the
-       browser tracker never breaks.
+       No-op: returns success so the browser tracker
+       never breaks.
        ========================================== */
     if (path === "/api/track" && method === "POST") {
       return json({ ok: true });
-    }
-
-    /* ==========================================
-       Admin stats (read-only)
-       Returns empty stats — data lives in Firestore,
-       read client-side by the Admin dashboard.
-       ========================================== */
-    if (path === "/api/admin/stats" && method === "GET") {
-      return json({
-        totalViews: 0,
-        views: 0,
-        cpa: 0,
-        completionRate: 0,
-        pageViews: {},
-        sortedPages: [],
-        recentEvents: [],
-      });
-    }
-
-    /* ==========================================
-       Admin dashboard page
-       ========================================== */
-    if ((path === "/Admin" || path === "/Admin/") && method === "GET") {
-      try {
-        return await serveAsset(env, "/Admin/index.html");
-      } catch (err) {
-        return new Response("Admin page unavailable", { status: 500 });
-      }
     }
 
     /* ==========================================
@@ -89,16 +58,4 @@ function json(data, status = 200) {
       ...corsHeaders(),
     },
   });
-}
-
-async function serveAsset(env, path) {
-  try {
-    const response = await env.ASSETS.fetch(path);
-    if (response.status === 404) {
-      return new Response("Not found", { status: 404 });
-    }
-    return response;
-  } catch (err) {
-    return new Response("Asset unavailable", { status: 500 });
-  }
 }
