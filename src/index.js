@@ -54,7 +54,11 @@ export default {
        Admin dashboard page
        ========================================== */
     if ((path === "/Admin" || path === "/Admin/") && method === "GET") {
-      return serveAsset(env, request.url, "/Admin/index.html");
+      try {
+        return await serveAsset(env, "/Admin/index.html");
+      } catch (err) {
+        return new Response("Admin page unavailable", { status: 500 });
+      }
     }
 
     /* ==========================================
@@ -87,22 +91,14 @@ function json(data, status = 200) {
   });
 }
 
-function urlPath(request) {
+async function serveAsset(env, path) {
   try {
-    return new URL(request.url).pathname;
-  } catch (e) {
-    return "/";
+    const response = await env.ASSETS.fetch(path);
+    if (response.status === 404) {
+      return new Response("Not found", { status: 404 });
+    }
+    return response;
+  } catch (err) {
+    return new Response("Asset unavailable", { status: 500 });
   }
-}
-
-async function serveAsset(env, requestUrl, path) {
-  const assetUrl = new URL(path, requestUrl);
-  const assetRequest = new Request(assetUrl.toString(), {
-    headers: { accept: "text/html" },
-  });
-  const response = await env.ASSETS.fetch(assetRequest);
-  if (response.status === 404) {
-    return new Response("Not found", { status: 404 });
-  }
-  return response;
 }
