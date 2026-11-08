@@ -18,7 +18,7 @@
 .slt-toast,.slt-tip{
   position:fixed;left:50%;z-index:9200;
   width:min(94vw,440px);
-  bottom:max(14px,env(safe-area-inset-bottom));
+  bottom:calc(max(14px,env(safe-area-inset-bottom)) + var(--slt-lift,0px));
   transform:translate(-50%,calc(100% + 40px));
   opacity:0;pointer-events:none;
   color:var(--blush,#f8dce3);font-family:var(--sans,system-ui,sans-serif);

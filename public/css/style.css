@@ -275,3 +275,8 @@ img,svg{max-width:100%}
 /* Ad-task tutorial UI lives in css/tutorial.css */
 .btn.nudge{animation:nudge .45s}
 @keyframes nudge{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+
+/* keep wide ads from stretching the page on phones (the tooltip centres on the page width) */
+html{overflow-x:hidden}
+.ad-slot{max-width:100%;overflow:hidden}
+.ad-slot[data-floating]{overflow:visible}

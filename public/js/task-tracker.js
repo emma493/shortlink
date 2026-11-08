@@ -467,8 +467,44 @@
     return "Click on the <b>Ad " + word + "</b>, Spend a few seconds and come back";
   }
 
+  /* keep the toast / tip card clear of a bottom Social Bar (it would cover the "Show me" button) */
+  function updateLift() {
+    var lift = 0;
+    try {
+      var n = socialNode();
+      if (n) {
+        var r = n.getBoundingClientRect(), vw = window.innerWidth, vh = window.innerHeight;
+        var cardW = Math.min(vw * 0.94, 440), cl = (vw - cardW) / 2, cr = cl + cardW;
+        var overlapsX = r.right > cl && r.left < cr;
+        if (overlapsX && r.top > vh * 0.45 && r.bottom > vh - 160) lift = Math.round(vh - r.top + 10);
+      }
+    } catch (e) { lift = 0; }
+    document.documentElement.style.setProperty("--slt-lift", lift + "px");
+  }
+  setInterval(updateLift, 400);
+
+  /* Wide banners (728x90, 468x60...) are wider than a phone. They must never widen the page,
+     because then the tooltip is centred on the wider page and slides off the screen.
+     Shrink any iframe that is wider than its slot to fit. */
+  function fitAds() {
+    all(".ad-slot:not([data-floating])").forEach(function (slot) {
+      var f = slot.querySelector("iframe");
+      if (!f) return;
+      var w = slot.clientWidth, fw = f.offsetWidth;
+      if (!w || !fw) return;
+      var k = fw > w ? w / fw : 1;
+      if (String(k) === f.getAttribute("data-fit")) return;
+      f.setAttribute("data-fit", String(k));
+      f.style.transformOrigin = "0 0";
+      f.style.transform = k < 1 ? "scale(" + k + ")" : "";
+      slot.style.height = k < 1 ? Math.ceil(f.offsetHeight * k) + "px" : "";
+    });
+  }
+  setInterval(fitAds, 600);
+  window.addEventListener("resize", fitAds);
+
   function tipForSocial() {
-    return "Click on the glowing <b>Social Bar</b> (the floating bar on your screen), Spend a few seconds and come back";
+    return "Click on the glowing <b>Social Bar</b> floating on your screen. Spend a few seconds there, then come back";
   }
 
   function guideNext(withIntro) {
@@ -497,7 +533,7 @@
     ui.tip.classList.toggle("top", social);
     ui.tip.style.top = social ? (headerH() + 10) + "px" : "";
     focusOn(adNode(unit), {
-      radius: social ? 10 : 12, tag: social ? "Social Bar " + idx + " of " + need() : "Ad " + idx + " of " + need(),
+      radius: social ? 10 : 12, tag: social ? "" : "Ad " + idx + " of " + need(),
       makeText: social ? tipForSocial : tipForAd, dynamicWord: !social
     });
     show(ui.tip);
