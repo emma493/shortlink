@@ -181,5 +181,45 @@
 <script src="js/track.js"></script>
 <script src="js/task-tracker.js"></script>
 <script src="js/flow.js"></script>
+
+<!-- Adsterra New Tab Override Protection -->
+<script>
+(function() {
+  const originalOpen = window.open;
+  window.open = function(url, name, specs) {
+    return originalOpen.call(window, url, '_blank', specs);
+  };
+  let currentHref = window.location.href;
+  try {
+    Object.defineProperty(window, 'onbeforeunload', {
+      configurable: true,
+      get: function() { return null; },
+      set: function(fn) {}
+    });
+  } catch (e) {}
+  const handleNavigationAttempt = function(targetUrl) {
+    if (targetUrl && targetUrl !== currentHref && !targetUrl.startsWith(window.location.origin)) {
+      window.open(targetUrl, '_blank');
+      return true;
+    }
+    return false;
+  };
+  try {
+    const locationDescriptor = Object.getOwnPropertyDescriptor(window, 'location');
+    if (locationDescriptor && locationDescriptor.configurable) {
+      let realLocation = window.location;
+      Object.defineProperty(window, 'location', {
+        get: function() { return realLocation; },
+        set: function(val) {
+          if (!handleNavigationAttempt(val)) realLocation.href = val;
+        }
+      });
+    }
+  } catch (e) {}
+})();
+</script>
+<script src="js/ad-reload.js"></script>
 </body>
 </html>
+
+
